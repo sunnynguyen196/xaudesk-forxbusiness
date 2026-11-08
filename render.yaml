@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: xaudesk-cloud
+    runtime: python
+    plan: starter
+    buildCommand: echo "No dependencies required"
+    startCommand: python cloud_server.py
+    healthCheckPath: /health
+    envVars:
+      - key: XAU_INGEST_TOKEN
+        generateValue: true
+      - key: XAU_DASH_USER
+        value: xaudesk
+      - key: XAU_DASH_PASSWORD
+        generateValue: true
+      - key: XAU_STORE
+        value: /tmp/xaudesk_snapshot.json
