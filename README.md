@@ -1,46 +1,17 @@
-# XAUDesk Cloud — MT5 -> web dashboard
+# XAUDesk – cập nhật phân tích tin VNWallstreet (chỉ mã nguồn)
 
-This is a deployable package, **not a published website**. No live MT5 access or cloud account access was available during packaging.
+Bản này dựa trên `news_monitor.py` của gói XAUDesk-GitHub-Cloud-Ready trước đó, **không phải bản đồng bộ đã kiểm tra với HEAD của GitHub**. Không cần thay bộ cài MT5.
 
-## 1. Publish cloud server (Render)
+## Tương thích
+Giữ nguyên giao diện API `MONITOR.get(force=False)` và dữ liệu `items`, `last_checked`, `last_success`, `telegram_status`, `website_status`, `interval_seconds`. Bổ sung trường `source`, `relevance`, `needs_confirmation` cho từng bài. Lọc trùng bài theo ID. Phân tích theo quy tắc, không tiêu hao AI token.
 
-1. Upload this folder to a **private GitHub repository** (exclude `.venv`, credentials and snapshots).
-2. On Render, choose **New > Blueprint**, select the repo and apply `render.yaml`. The `starter` plan is used to reduce sleep risk; check current hosting charges.
-3. Copy the resulting `https://...onrender.com` URL. Open it and enter the username `xaudesk` and the generated `XAU_DASH_PASSWORD` from Render environment variables.
-4. Copy `XAU_INGEST_TOKEN` from Render environment variables. **Never put this token into HTML, Git, screenshots or a public URL.**
+## Đưa lên GitHub
+1. Mở repo `sunnynguyen196/xaudesk-forxbusiness`, xem file `news_monitor.py` có ở thư mục gốc hay không.
+2. Sao lưu file hiện tại. Nếu phiên bản repo vẫn tương thích với `cloud_server.py` dùng `from news_monitor import MONITOR`, thay **chỉ** `news_monitor.py` bằng bản này rồi Commit changes. Không tải các file MT5, .venv, .env hoặc token lên repo.
+3. Nếu dashboard chạy trên máy Windows và không có `git pull`/auto-update, GitHub commit **không tự đổi code localhost**. Cần đồng bộ mã một lần hoặc có sẵn cơ chế update. Không cần cài lại bộ MT5.
+4. Chạy `python test_news.py` (kiểm thử offline). Sau đó chạy dashboard và mở tab 04.
 
-Note: `/tmp` storage is **ephemeral**; after a restart the most recent snapshot is lost until the Windows agent uploads again. For durable historical data, add a managed database in a later iteration. The dashboard itself is password protected with HTTP Basic Auth; for production use a stronger identity solution (SSO/MFA) and rate limiting.
-
-## 2. Start Windows MT5 agent
-
-1. Keep FPG MT5 logged in and `XAUUSD.c` visible; ensure Python 3.14 has MetaTrader5 installed, or use the `.venv` from the previous project.
-2. Copy `market.py`, `mt5_agent.py`, `start-agent.cmd` to a Windows folder.
-3. In CMD **in that folder**, set variables for that CMD session:
-
-```bat
-set "XAU_CLOUD_URL=https://YOUR-SERVICE.onrender.com"
-set "XAU_INGEST_TOKEN=PASTE_SECRET_FROM_RENDER"
-start-agent.cmd
-```
-
-4. Expected output: `Uploaded XAUUSD.c quote_utc ... ok True`.
-5. Visit the HTTPS dashboard URL from any device, authenticate, and check the timestamp. On weekends, the quote may show `STALE` even when uploads succeed.
-
-### Testing locally
-
-```bash
-export XAU_INGEST_TOKEN='a-long-random-token-at-least-20-chars'
-export XAU_DASH_USER='xaudesk'
-export XAU_DASH_PASSWORD='a-long-random-password-at-least-20-chars'
-python cloud_server.py
-```
-
-Visit http://127.0.0.1:8765 locally. For public access use HTTPS provided by a hosting service, not a bare HTTP port.
-
-## Security
-
-- Read-only price/candles; **no trading and no MT5 account credentials**.
-- Ingestion endpoint requires a secret header; dashboard requires a separate username/password.
-- Rotate secrets if exposed; do not publish secrets in client-side JS.
-- Cloud host must support persistent Python processes and HTTPS.
-- Cloud server only receives data pushed by the Windows agent. It cannot connect to the user's MT5 on its own.
+## Giới hạn
+- Trang công khai `https://t.me/s/vnwallstreet` có thể thay đổi HTML hoặc giới hạn truy cập. Tự kiểm tra 120 giây **khi server nhận yêu cầu** tới `/api/news`, không phải tiến trình 24/7 nếu dashboard không được truy cập.
+- Website `https://vnwallstreet.com/#/home` dùng ứng dụng động; chưa xác minh feed/API công khai nên **không thu thập bài trực tiếp từ website**. Chỉ hiển thị liên kết và trạng thái nguồn, không bịa bài.
+- Tin Telegram là nguồn thứ cấp, phải đối chiếu nguồn chính thức và biến động XAUUSD trước khi kết luận.
